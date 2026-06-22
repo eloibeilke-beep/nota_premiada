@@ -1,8 +1,8 @@
 import { getItem } from '@/src/storage';
+import { apiUrl } from '@/src/api';
+import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Alert, FlatList, SectionList, StyleSheet, Text, TouchableOpacity, View, ScrollView } from 'react-native';
-
-const API_URL = 'http://192.168.3.51:8000';
 const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 
 type Ganhador = {
@@ -22,6 +22,7 @@ type Ganhador = {
 type Secao = { titulo: string; data: Ganhador[] };
 
 export default function SorteioScreen() {
+  const router = useRouter();
   const [ultimoResultado, setUltimoResultado] = useState<Ganhador[]>([]);
   const [secoes, setSecoes] = useState<Secao[]>([]);
   const [tipo, setTipo] = useState<'mensal' | 'anual'>('mensal');
@@ -31,11 +32,27 @@ export default function SorteioScreen() {
   const [abaAtiva, setAbaAtiva] = useState<'sortear' | 'historico'>('sortear');
   const [proximaPosicao, setProximaPosicao] = useState(1);
   const [lugarSelecionado, setLugarSelecionado] = useState(1);
+  const [quantidadeSorteios, setQuantidadeSorteios] = useState(10);
+  const [carregandoConfig, setCarregandoConfig] = useState(true);
+
+  const carregarConfiguracaoSorteios = async () => {
+    try {
+      const cpf = await getItem('cpf');
+      const res = await fetch(apiUrl(`/admin/configuracao-sorteios?cpfAdmin=${cpf}`));
+      const json = await res.json();
+      setQuantidadeSorteios(json.quantidadeSorteios || 10);
+    } catch (e) {
+      console.log(e);
+      setQuantidadeSorteios(10); // Valor padrão em caso de erro
+    } finally {
+      setCarregandoConfig(false);
+    }
+  };
 
   const buscarHistorico = async () => {
     try {
       const cpf = await getItem('cpf');
-      const res = await fetch(`${API_URL}/admin/historico-sorteios?cpfAdmin=${cpf}`);
+      const res = await fetch(apiUrl(`/admin/historico-sorteios?cpfAdmin=${cpf}`));
       const json: Ganhador[] = await res.json();
 
       // Calcula próxima posição para o período atual
@@ -75,7 +92,7 @@ export default function SorteioScreen() {
       { text: 'Cancelar', style: 'cancel' },
       { text: 'Apagar', style: 'destructive', onPress: async () => {
         const cpf = await getItem('cpf');
-        await fetch(`${API_URL}/admin/sorteio/${id}?cpfAdmin=${cpf}`, { method: 'DELETE' });
+        await fetch(apiUrl(`/admin/sorteio/${id}?cpfAdmin=${cpf}`), { method: 'DELETE' });
         buscarHistorico();
       }}
     ]);
@@ -86,12 +103,14 @@ export default function SorteioScreen() {
       { text: 'Cancelar', style: 'cancel' },
       { text: 'Apagar tudo', style: 'destructive', onPress: async () => {
         const cpf = await getItem('cpf');
-        await fetch(`${API_URL}/admin/sorteios?cpfAdmin=${cpf}`, { method: 'DELETE' });
+        await fetch(apiUrl(`/admin/sorteios?cpfAdmin=${cpf}`), { method: 'DELETE' });
         setSecoes([]);
         buscarHistorico();
       }}
     ]);
   };
+
+  useEffect(() => { carregarConfiguracaoSorteios(); }, []);
 
   useEffect(() => { setUltimoResultado([]); buscarHistorico(); }, [tipo, mesSelecionado, anoSelecionado]);
 
@@ -105,7 +124,7 @@ export default function SorteioScreen() {
           setCarregando(true);
           try {
             const cpf = await getItem('cpf');
-            const res = await fetch(`${API_URL}/admin/sortear`, {
+            const res = await fetch(apiUrl('/admin/sortear'), {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ cpfAdmin: cpf, tipo, mes: mesSelecionado, ano: anoSelecionado, quantidade: 1, lugar: lugarSelecionado }),
@@ -148,13 +167,18 @@ export default function SorteioScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Abas */}
-      <View style={styles.abas}>
-        <TouchableOpacity style={[styles.aba, abaAtiva === 'sortear' && styles.abaAtiva]} onPress={() => setAbaAtiva('sortear')}>
-          <Text style={[styles.abaTexto, abaAtiva === 'sortear' && styles.abaTextoAtivo]}>🎲 Realizar</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={[styles.aba, abaAtiva === 'historico' && styles.abaAtiva]} onPress={() => setAbaAtiva('historico')}>
-          <Text style={[styles.abaTexto, abaAtiva === 'historico' && styles.abaTextoAtivo]}>📋 Histórico</Text>
+      {/* Abas e Configuração */}
+      <View style={styles.topoContainer}>
+        <View style={styles.abas}>
+          <TouchableOpacity style={[styles.aba, abaAtiva === 'sortear' && styles.abaAtiva]} onPress={() => setAbaAtiva('sortear')}>
+            <Text style={[styles.abaTexto, abaAtiva === 'sortear' && styles.abaTextoAtivo]}>🎲 Realizar</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.aba, abaAtiva === 'historico' && styles.abaAtiva]} onPress={() => setAbaAtiva('historico')}>
+            <Text style={[styles.abaTexto, abaAtiva === 'historico' && styles.abaTextoAtivo]}>📋 Histórico</Text>
+          </TouchableOpacity>
+        </View>
+        <TouchableOpacity style={styles.btnConfigurar} onPress={() => router.push('/(admin)/configuracao' as any)}>
+          <Text style={styles.btnConfigurarTexto}>⚙️</Text>
         </TouchableOpacity>
       </View>
 
@@ -194,7 +218,7 @@ export default function SorteioScreen() {
               {/* Lugar */}
               <Text style={styles.secaoTitulo}>Lugar do sorteio</Text>
               <View style={styles.row}>
-                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(l => {
+                {Array.from({ length: quantidadeSorteios }, (_, i) => i + 1).map(l => {
                   const jaSorteado = secoes.some(s =>
                     s.data.some(g => g.posicao === l &&
                       g.tipo === tipo &&
@@ -263,11 +287,14 @@ export default function SorteioScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 20 },
-  abas: { flexDirection: 'row', marginBottom: 16, borderRadius: 10, overflow: 'hidden', borderWidth: 1, borderColor: '#1b5e20' },
+  topoContainer: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 16 },
+  abas: { flex: 1, flexDirection: 'row', borderRadius: 10, overflow: 'hidden', borderWidth: 1, borderColor: '#1b5e20' },
   aba: { flex: 1, padding: 12, alignItems: 'center', backgroundColor: '#fff' },
   abaAtiva: { backgroundColor: '#1b5e20' },
   abaTexto: { fontWeight: '600', color: '#1b5e20', fontSize: 14 },
   abaTextoAtivo: { color: '#fff' },
+  btnConfigurar: { width: 48, height: 48, borderRadius: 24, backgroundColor: '#1b5e20', alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: '#1b5e20' },
+  btnConfigurarTexto: { fontSize: 20 },
   secaoTitulo: { fontSize: 13, fontWeight: '700', color: '#555', marginBottom: 8, marginTop: 12 },
   row: { flexDirection: 'row', gap: 10, marginBottom: 8, flexWrap: 'wrap' },
   opcao: { flex: 1, padding: 12, borderRadius: 10, borderWidth: 2, borderColor: '#e0e0e0', alignItems: 'center', backgroundColor: '#fff' },

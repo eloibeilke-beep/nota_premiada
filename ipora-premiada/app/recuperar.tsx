@@ -1,8 +1,7 @@
 import { useRouter } from 'expo-router';
+import { apiUrl } from '@/src/api';
 import { useState } from 'react';
 import { Alert, KeyboardAvoidingView, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-
-const API_URL = 'http://192.168.3.51:8000';
 
 export default function RecuperarScreen() {
   const router = useRouter();
@@ -25,7 +24,7 @@ export default function RecuperarScreen() {
     }
     setCarregando(true);
     try {
-      const res = await fetch(`${API_URL}/recuperar-senha`, {
+      const res = await fetch(apiUrl('/recuperar-senha'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ cpf: cpfLimpo }),
@@ -49,7 +48,7 @@ export default function RecuperarScreen() {
     }
     setCarregando(true);
     try {
-      const res = await fetch(`${API_URL}/redefinir-senha`, {
+      const res = await fetch(apiUrl('/redefinir-senha'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ cpf: cpfLimpo, token: codigo, novaSenha }),

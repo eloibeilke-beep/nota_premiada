@@ -1,13 +1,12 @@
 import * as DocumentPicker from 'expo-document-picker';
 import { useRouter } from 'expo-router';
+import { apiUrl } from '@/src/api';
 import { useEffect, useState } from 'react';
 import {
   Alert, FlatList, StyleSheet, Text,
   TouchableOpacity, View, ActivityIndicator
 } from 'react-native';
 import { getItem } from '@/src/storage';
-
-const API_URL = 'http://192.168.3.51:8000';
 const SENHA_ADMIN = '1234'; // troque por uma senha segura
 
 type Empresa = {
@@ -125,7 +124,7 @@ export default function AdminScreen() {
           text: 'Importar', onPress: async () => {
             setCarregando(true);
             try {
-              const res = await fetch(`${API_URL}/admin/importar-empresas`, {
+              const res = await fetch(apiUrl('/admin/importar-empresas'), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ cpfAdmin, empresas, modo: modoImport }),

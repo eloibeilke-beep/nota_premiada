@@ -1,9 +1,8 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { getItem, setItem } from '@/src/storage';
+import { apiUrl } from '@/src/api';
 import { useRef, useState } from 'react';
 import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-
-const API_URL = 'http://192.168.3.51:8000';
 
 export default function VerificarScreen() {
   const router = useRouter();
@@ -28,7 +27,7 @@ export default function VerificarScreen() {
 
     setCarregando(true);
     try {
-      const res = await fetch(`${API_URL}/verificar-sms`, {
+      const res = await fetch(apiUrl('/verificar-sms'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ cpf, token }),
@@ -54,7 +53,7 @@ export default function VerificarScreen() {
 
   const reenviar = async () => {
     try {
-      await fetch(`${API_URL}/reenviar-sms`, {
+      await fetch(apiUrl('/reenviar-sms'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ cpf }),

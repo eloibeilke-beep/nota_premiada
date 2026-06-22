@@ -1,9 +1,8 @@
 import { useRouter } from 'expo-router';
+import { apiUrl } from '@/src/api';
 import { getItem } from '@/src/storage';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-
-const API_URL = 'http://192.168.3.51:8000';
 
 type Empresa = {
   id: string;
@@ -26,7 +25,7 @@ export default function EmpresasScreen() {
     setCarregando(true);
     try {
       const cpf = await getItem('cpf');
-      const res = await fetch(`${API_URL}/admin/empresas?cpfAdmin=${cpf}`);
+      const res = await fetch(apiUrl(`/admin/empresas?cpfAdmin=${cpf}`));
       const json = await res.json();
       setEmpresas(json);
       setFiltradas(json);

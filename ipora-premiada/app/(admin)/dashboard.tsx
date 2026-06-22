@@ -1,8 +1,7 @@
 import { getItem } from '@/src/storage';
+import { apiUrl } from '@/src/api';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-
-const API_URL = 'http://192.168.3.51:8000';
 
 type Stats = {
   totalUsuarios: number;
@@ -32,7 +31,7 @@ export default function DashboardScreen() {
     setCarregando(true);
     try {
       const cpf = await getItem('cpf');
-      const res = await fetch(`${API_URL}/admin/stats?cpfAdmin=${cpf}`);
+      const res = await fetch(apiUrl(`/admin/stats?cpfAdmin=${cpf}`));
       const json = await res.json();
       setStats(json);
     } catch (e) {

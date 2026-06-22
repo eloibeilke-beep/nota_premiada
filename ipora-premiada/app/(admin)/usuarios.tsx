@@ -1,8 +1,7 @@
 import { getItem } from '@/src/storage';
+import { apiUrl } from '@/src/api';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, TextInput, View } from 'react-native';
-
-const API_URL = 'http://192.168.3.51:8000';
 
 type Usuario = {
   cpf: string;
@@ -23,7 +22,7 @@ export default function UsuariosScreen() {
     setCarregando(true);
     try {
       const cpf = await getItem('cpf');
-      const res = await fetch(`${API_URL}/admin/usuarios?cpfAdmin=${cpf}`);
+      const res = await fetch(apiUrl(`/admin/usuarios?cpfAdmin=${cpf}`));
       const json = await res.json();
       setUsuarios(json);
       setFiltrados(json);

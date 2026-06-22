@@ -1,9 +1,8 @@
 import { useRouter } from 'expo-router';
 import { getItem, setItem } from '@/src/storage';
+import { apiUrl } from '@/src/api';
 import { useState } from 'react';
 import { Alert, KeyboardAvoidingView, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-
-const API_URL = 'http://192.168.3.51:8000';
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -28,7 +27,7 @@ export default function LoginScreen() {
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 10000);
 
-      const res = await fetch(`${API_URL}/login`, {
+      const res = await fetch(apiUrl('/login'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ cpf: cpfLimpo, senha }),

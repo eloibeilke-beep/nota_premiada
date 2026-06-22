@@ -1,8 +1,7 @@
 import { useRouter } from 'expo-router';
+import { apiUrl } from '@/src/api';
 import { useState } from 'react';
 import { Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity } from 'react-native';
-
-const API_URL = 'http://192.168.3.51:8000';
 
 export default function CadastroScreen() {
   const router = useRouter();
@@ -34,7 +33,7 @@ export default function CadastroScreen() {
 
     setCarregando(true);
     try {
-      const res = await fetch(`${API_URL}/cadastrar`, {
+      const res = await fetch(apiUrl('/cadastrar'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ nome, cpf: cpfLimpo, telefone: telLimpo, senha }),

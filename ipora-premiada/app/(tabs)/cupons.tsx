@@ -1,8 +1,7 @@
 import { getItem } from '@/src/storage';
+import { apiUrl } from '@/src/api';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, RefreshControl, SectionList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-
-const API_URL = 'http://192.168.3.51:8000';
 
 const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 
@@ -36,7 +35,7 @@ export default function CuponsScreen() {
     setCarregando(true);
     try {
       const cpf = await getItem('cpf');
-      const res = await fetch(`${API_URL}/minhas-notas/${cpf}`);
+      const res = await fetch(apiUrl(`/minhas-notas/${cpf}`));
       const notas: Nota[] = await res.json();
 
       // Agrupa por mês/ano

@@ -1,9 +1,8 @@
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { getItem } from '@/src/storage';
+import { apiUrl } from '@/src/api';
 import { useEffect, useState } from 'react';
 import { Alert, Button, StyleSheet, Text, View } from 'react-native';
-
-const API_URL = 'http://192.168.3.51:8000/validar-nota';
 
 export default function ScannerScreen() {
   const [permission, requestPermission] = useCameraPermissions();
@@ -29,7 +28,7 @@ export default function ScannerScreen() {
     setEscaneado(true);
 
     try {
-      const resposta = await fetch(API_URL, {
+      const resposta = await fetch(apiUrl('/validar-nota'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ qrCode: data, cpfUsuario: cpf }),
