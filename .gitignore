@@ -1,4 +1,6 @@
 serviceAccountKey.json
+*adminsdk*.json
+*firebase-adminsdk*.json
 notas.db
 __pycache__/
 *.pyc
