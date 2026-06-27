@@ -161,6 +161,28 @@ export default function SorteioScreen() {
   useEffect(() => { carregarConfiguracaoSorteios(); }, []);
   useEffect(() => { buscarHistorico(); }, [tipo, mesSelecionado, anoSelecionado]);
 
+  const publicarResultados = async (publicar: boolean) => {
+    try {
+      const cpf = await getItem('cpf');
+      const res = await fetch(apiUrl('/admin/publicar-resultado'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          cpfAdmin: cpf,
+          tipo,
+          mes: mesSelecionado,
+          ano: anoSelecionado,
+          publicar,
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok) { Alert.alert('Erro', json.detail); return; }
+      Alert.alert('Sucesso', json.mensagem);
+    } catch {
+      Alert.alert('Erro', 'Não foi possível conectar ao servidor.');
+    }
+  };
+
   const realizarSorteio = async () => {
     Alert.alert(
       'Confirmar sorteio',
@@ -250,7 +272,8 @@ export default function SorteioScreen() {
   const renderFiltrosHistorico = () => (
     <ScrollView
       horizontal
-      showsHorizontalScrollIndicator={false}
+      showsHorizontalScrollIndicator={true}
+      persistentScrollbar={true}
       style={styles.filtrosScroll}
       contentContainerStyle={styles.filtrosContainer}>
       {/* Botão Anual */}
@@ -395,6 +418,34 @@ export default function SorteioScreen() {
           {/* Filtros de período */}
           {renderFiltrosHistorico()}
 
+          {/* Botões de publicação */}
+          <View style={styles.publicarRow}>
+            <TouchableOpacity
+              style={styles.btnPublicar}
+              onPress={() => Alert.alert(
+                'Publicar resultados',
+                `Publicar ganhadores de ${tipo === 'anual' ? `Anual ${anoSelecionado}` : `${MESES[mesSelecionado - 1]} ${anoSelecionado}`} para todos os usuários?`,
+                [
+                  { text: 'Cancelar', style: 'cancel' },
+                  { text: 'Publicar', onPress: () => publicarResultados(true) },
+                ]
+              )}>
+              <Text style={styles.btnPublicarTexto}>📢 Publicar resultados</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.btnDespublicar}
+              onPress={() => Alert.alert(
+                'Ocultar resultados',
+                `Ocultar ganhadores de ${tipo === 'anual' ? `Anual ${anoSelecionado}` : `${MESES[mesSelecionado - 1]} ${anoSelecionado}`}?`,
+                [
+                  { text: 'Cancelar', style: 'cancel' },
+                  { text: 'Ocultar', style: 'destructive', onPress: () => publicarResultados(false) },
+                ]
+              )}>
+              <Text style={styles.btnDespublicarTexto}>🔒 Ocultar</Text>
+            </TouchableOpacity>
+          </View>
+
           {carregandoHistorico ? (
             <View style={styles.center}>
               <ActivityIndicator size="large" color="#1b5e20" />
@@ -455,12 +506,14 @@ const styles = StyleSheet.create({
   btnConfigurarTexto: { fontSize: 20 },
 
   // Filtros do histórico
-  filtrosScroll: { maxHeight: 52, marginBottom: 12 },
-  filtrosContainer: { flexDirection: 'row', gap: 8, paddingBottom: 4 },
+  filtrosScroll: { marginBottom: 12 },
+  filtrosContainer: { flexDirection: 'row', gap: 8, paddingBottom: 4, paddingHorizontal: 2 },
   filtroBotao: {
-    paddingHorizontal: 14, paddingVertical: 8,
+    paddingHorizontal: 16, paddingVertical: 10,
     borderRadius: 20, borderWidth: 2, borderColor: '#1b5e20',
     backgroundColor: '#fff',
+    minWidth: 70,
+    alignItems: 'center',
   },
   filtroBotaoAtivo: { backgroundColor: '#1b5e20' },
   filtroBotaoVazio: { borderColor: '#e0e0e0' },
@@ -526,4 +579,29 @@ const styles = StyleSheet.create({
   vazioContainer: { alignItems: 'center', marginTop: 48, gap: 8 },
   vazioIcone: { fontSize: 40 },
   vazio: { textAlign: 'center', color: '#888', fontSize: 15 },
+
+  // Publicar resultados
+  publicarRow: { flexDirection: 'row', gap: 8, marginBottom: 12 },
+  btnPublicar: {
+    flex: 1,
+    backgroundColor: '#f9a825',
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  btnPublicarTexto: { color: '#fff', fontWeight: '700', fontSize: 12, textAlign: 'center' },
+  btnDespublicar: {
+    flex: 0,
+    backgroundColor: '#ffebee',
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#ffcdd2',
+  },
+  btnDespublicarTexto: { color: '#c62828', fontWeight: '600', fontSize: 12, textAlign: 'center' },
 });

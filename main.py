@@ -364,13 +364,6 @@ def validar_nota(dados: NotaInput):
         agora = datetime.now()
 
         if not empresa.get("ativa", False):
-            db.collection("notas").add({
-                "qrCode": dados.qrCode, "cnpj": cnpj, "razaoSocial": razao_social,
-                "municipio": municipio, "cpfUsuario": dados.cpfUsuario,
-                "nomeUsuario": usuario.get("nome", ""), "cupons": 0,
-                "mes": agora.month, "ano": agora.year,
-                "mesAno": f"{agora.month:02d}/{agora.year}", "registradoEm": agora,
-            })
             raise HTTPException(status_code=403,
                 detail=f"Nota de {razao_social} ({municipio or cnpj}) não gera cupons — apenas notas de Iporã do Oeste participam")
 
@@ -754,6 +747,59 @@ def historico_sorteios(cpfAdmin: str):
     verificar_admin(cpfAdmin)
     resultado = [{"id": d.id, **d.to_dict()} for d in db.collection("sorteios").stream()]
     resultado.sort(key=lambda x: x.get("realizadoEm", ""), reverse=True)
+    return resultado
+
+class PublicarResultadoInput(BaseModel):
+    cpfAdmin: str
+    tipo: str = "mensal"   # "mensal" ou "anual"
+    mes: int | None = None
+    ano: int | None = None
+    publicar: bool = True
+
+@app.post("/admin/publicar-resultado")
+def publicar_resultado(dados: PublicarResultadoInput):
+    """Publica ou despublica resultados de um período específico."""
+    verificar_admin(dados.cpfAdmin)
+    agora = datetime.now()
+    mes = dados.mes or agora.month
+    ano = dados.ano or agora.year
+
+    atualizados = 0
+    for d in db.collection("sorteios").stream():
+        s = d.to_dict()
+        if s.get("tipo") != dados.tipo or s.get("ano") != ano:
+            continue
+        if dados.tipo == "mensal" and s.get("mes") != mes:
+            continue
+        d.reference.update({"publicado": dados.publicar})
+        atualizados += 1
+
+    periodo = f"Anual {ano}" if dados.tipo == "anual" else f"{mes:02d}/{ano}"
+    acao = "publicados" if dados.publicar else "ocultados"
+    return {"mensagem": f"{atualizados} sorteios {acao} — {periodo}"}
+
+@app.get("/resultados-publicos")
+def resultados_publicos():
+    """Retorna apenas sorteios marcados como publicados — sem autenticação."""
+    docs = db.collection("sorteios").where("publicado", "==", True).stream()
+    resultado = []
+    for d in docs:
+        s = {"id": d.id, **d.to_dict()}
+        # Remove dados sensíveis — mostra só o necessário
+        resultado.append({
+            "id": s["id"],
+            "numeroCupom": s.get("numeroCupom"),
+            "nomeUsuario": s.get("nomeUsuario", ""),
+            "razaoSocial": s.get("razaoSocial", ""),
+            "mesAno": s.get("mesAno", ""),
+            "tipo": s.get("tipo", ""),
+            "mes": s.get("mes"),
+            "ano": s.get("ano"),
+            "posicao": s.get("posicao"),
+            "tipoNota": s.get("tipoNota", "produto"),
+            "realizadoEm": s.get("realizadoEm", ""),
+        })
+    resultado.sort(key=lambda x: (x.get("ano", 0), x.get("mes", 0), x.get("posicao", 0)))
     return resultado
 
 @app.delete("/admin/empresas")

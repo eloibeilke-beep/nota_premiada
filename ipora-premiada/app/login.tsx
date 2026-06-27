@@ -2,7 +2,10 @@ import { useRouter } from 'expo-router';
 import { getItem, setItem } from '@/src/storage';
 import { apiUrl } from '@/src/api';
 import { useState, useRef } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import {
+  Alert, KeyboardAvoidingView, Platform, ScrollView,
+  StyleSheet, Text, TextInput, TouchableOpacity, View,
+} from 'react-native';
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -64,55 +67,72 @@ export default function LoginScreen() {
   };
 
   return (
-    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <Text style={styles.titulo}>Iporã Premiada</Text>
-      <Text style={styles.subtitulo}>Entrar</Text>
+    <KeyboardAvoidingView
+      style={styles.flex}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 24}>
+      <ScrollView
+        contentContainerStyle={styles.container}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}>
 
-      <TextInput
-        style={styles.input}
-        placeholder="CPF"
-        placeholderTextColor="#999"
-        keyboardType="numeric"
-        returnKeyType="next"
-        blurOnSubmit={false}
-        value={cpf}
-        onChangeText={v => setCpf(formatarCpf(v))}
-        onSubmitEditing={() => senhaRef.current?.focus()}
-      />
+        <Text style={styles.titulo}>Iporã Premiada</Text>
+        <Text style={styles.subtitulo}>Entrar</Text>
 
-      <TextInput
-        ref={senhaRef}
-        style={styles.input}
-        placeholder="Senha"
-        placeholderTextColor="#999"
-        secureTextEntry
-        returnKeyType="done"
-        value={senha}
-        onChangeText={setSenha}
-        onSubmitEditing={entrar}
-      />
+        <TextInput
+          style={styles.input}
+          placeholder="CPF"
+          placeholderTextColor="#999"
+          keyboardType="numeric"
+          returnKeyType="next"
+          blurOnSubmit={false}
+          value={cpf}
+          onChangeText={v => setCpf(formatarCpf(v))}
+          onSubmitEditing={() => senhaRef.current?.focus()}
+        />
 
-      <TouchableOpacity style={styles.botao} onPress={entrar} disabled={carregando}>
-        <Text style={styles.botaoTexto}>{carregando ? 'Entrando...' : 'Entrar'}</Text>
-      </TouchableOpacity>
+        <TextInput
+          ref={senhaRef}
+          style={styles.input}
+          placeholder="Senha"
+          placeholderTextColor="#999"
+          secureTextEntry
+          returnKeyType="done"
+          value={senha}
+          onChangeText={setSenha}
+          onSubmitEditing={entrar}
+        />
 
-      <TouchableOpacity onPress={() => router.push('/cadastro')}>
-        <Text style={styles.link}>Não tem conta? Cadastre-se</Text>
-      </TouchableOpacity>
+        <TouchableOpacity style={styles.botao} onPress={entrar} disabled={carregando}>
+          <Text style={styles.botaoTexto}>{carregando ? 'Entrando...' : 'Entrar'}</Text>
+        </TouchableOpacity>
 
-      <TouchableOpacity onPress={() => router.push('/recuperar')}>
-        <Text style={styles.link}>Esqueci minha senha</Text>
-      </TouchableOpacity>
+        <TouchableOpacity onPress={() => router.push('/cadastro')}>
+          <Text style={styles.link}>Não tem conta? Cadastre-se</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity onPress={() => router.push('/recuperar')}>
+          <Text style={styles.link}>Esqueci minha senha</Text>
+        </TouchableOpacity>
+
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: 'center', padding: 32, gap: 12 },
-  titulo: { fontSize: 28, fontWeight: 'bold', textAlign: 'center', marginBottom: 4 },
-  subtitulo: { fontSize: 18, textAlign: 'center', marginBottom: 16, color: '#555' },
-  input: { borderWidth: 1, borderColor: '#ccc', borderRadius: 10, padding: 14, fontSize: 16, backgroundColor: '#fff', color: '#000' },
+  flex: { flex: 1, backgroundColor: '#121212' },
+  container: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    padding: 32,
+    gap: 12,
+    paddingBottom: 48,
+  },
+  titulo: { fontSize: 28, fontWeight: 'bold', textAlign: 'center', marginBottom: 4, color: '#fff' },
+  subtitulo: { fontSize: 18, textAlign: 'center', marginBottom: 16, color: '#aaa' },
+  input: { borderWidth: 1, borderColor: '#444', borderRadius: 10, padding: 14, fontSize: 16, backgroundColor: '#1e1e1e', color: '#fff' },
   botao: { backgroundColor: '#2e7d32', padding: 16, borderRadius: 10, alignItems: 'center', marginTop: 8 },
   botaoTexto: { color: '#fff', fontSize: 16, fontWeight: '600' },
-  link: { textAlign: 'center', color: '#2e7d32', marginTop: 12, fontSize: 15 },
+  link: { textAlign: 'center', color: '#4caf50', marginTop: 12, fontSize: 15 },
 });
