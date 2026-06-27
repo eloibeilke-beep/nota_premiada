@@ -124,8 +124,9 @@ const styles = StyleSheet.create({
   flex: { flex: 1, backgroundColor: '#121212' },
   container: {
     flexGrow: 1,
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
     padding: 32,
+    paddingTop: 80,
     gap: 12,
     paddingBottom: 48,
   },
