@@ -15,9 +15,10 @@
       "android": {
         "buildType": "apk"
       },
-      "env": {
-        "EAS_NO_LOCKFILE": "1"
-      }
+      "cache": {
+        "disabled": true
+      },
+      "node": "22.0.0"
     }
   }
 }
