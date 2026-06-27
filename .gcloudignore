@@ -1,0 +1,9 @@
+.gcloudignore
+.git
+.gitignore
+ipora-premiada/
+*.bat
+__pycache__/
+*.pyc
+notas.db
+memory-bank/

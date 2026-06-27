@@ -11,20 +11,19 @@ type Nota = {
   municipio: string;
   cupons: number;
   numeroCupom: number;
+  numeroCupom2?: number;
+  tipoNota?: string;
   mes: number;
   ano: number;
   mesAno: string;
   registradoEm: string;
 };
 
-type Secao = {
-  titulo: string;
-  totalCupons: number;
-  data: Nota[];
-};
+// Item de exibição — uma nota de serviço gera dois itens
+type NotaExibicao = Nota & { _cupomExibido: number; _ehSegundoCupom: boolean };
 
 export default function CuponsScreen() {
-  const [secoes, setSecoes] = useState<Secao[]>([]);
+  const [secoes, setSecoes] = useState<{ titulo: string; totalCupons: number; data: NotaExibicao[] }[]>([]);
   const [totalAnual, setTotalAnual] = useState(0);
   const [cupomsAnuais, setCupomsAnuais] = useState<number[]>([]);
   const [carregando, setCarregando] = useState(true);
@@ -38,12 +37,23 @@ export default function CuponsScreen() {
       const res = await fetch(apiUrl(`/minhas-notas/${cpf}`));
       const notas: Nota[] = await res.json();
 
+      // Expande NFS-e com dois cupons em dois itens de exibição separados
+      const expandir = (notas: Nota[]): NotaExibicao[] => {
+        const itens: NotaExibicao[] = [];
+        notas.forEach(n => {
+          itens.push({ ...n, _cupomExibido: n.numeroCupom, _ehSegundoCupom: false });
+          if (n.tipoNota === 'servico' && n.numeroCupom2) {
+            itens.push({ ...n, _cupomExibido: n.numeroCupom2, _ehSegundoCupom: true });
+          }
+        });
+        return itens;
+      };
+
       // Agrupa por mês/ano
       const grupos: Record<string, Nota[]> = {};
       notas.forEach(n => {
         let chave = n.mesAno;
         if (!chave) {
-          // Fallback: extrai do campo registradoEm (pode ser string ou timestamp Firestore)
           let data: Date;
           if (n.registradoEm && typeof n.registradoEm === 'object' && '_seconds' in (n.registradoEm as any)) {
             data = new Date((n.registradoEm as any)._seconds * 1000);
@@ -60,25 +70,30 @@ export default function CuponsScreen() {
         grupos[chave].push(n);
       });
 
-      // Ordena meses do mais recente para o mais antigo
       const secoesOrdenadas = Object.entries(grupos)
         .sort(([a], [b]) => {
           const [ma, aa] = a.split('/').map(Number);
           const [mb, ab] = b.split('/').map(Number);
           return ab !== aa ? ab - aa : mb - ma;
         })
-        .map(([chave, notas]) => {
+        .map(([chave, notasDoMes]) => {
           const [m] = chave.split('/').map(Number);
           return {
             titulo: `${MESES[m - 1]} — ${chave.split('/')[1]}`,
-            totalCupons: notas.reduce((acc, n) => acc + (n.cupons ?? 0), 0),
-            data: notas,
+            totalCupons: notasDoMes.reduce((acc, n) => acc + (n.cupons ?? 0), 0),
+            data: expandir(notasDoMes),
           };
         });
 
       setSecoes(secoesOrdenadas);
       setTotalAnual(notas.reduce((acc, n) => acc + (n.cupons ?? 0), 0));
-      setCupomsAnuais(notas.filter(n => n.cupons > 0).map(n => n.numeroCupom));
+
+      const todosCupons: number[] = [];
+      notas.filter(n => n.cupons > 0).forEach(n => {
+        todosCupons.push(n.numeroCupom);
+        if (n.numeroCupom2) todosCupons.push(n.numeroCupom2);
+      });
+      setCupomsAnuais(todosCupons);
     } catch (e) {
       console.log(e);
     } finally {
@@ -128,7 +143,7 @@ export default function CuponsScreen() {
       ) : (
         <SectionList
           sections={secoes}
-          keyExtractor={item => item.id}
+          keyExtractor={item => `${item.id}-${item._cupomExibido}`}
           refreshControl={<RefreshControl refreshing={carregando} onRefresh={buscar} />}
           renderSectionHeader={({ section }) => (
             <TouchableOpacity
@@ -143,12 +158,26 @@ export default function CuponsScreen() {
           )}
           renderItem={({ item, section }) =>
             mesSelecionado === null || mesSelecionado === section.titulo ? (
-              <View style={[styles.card, item.cupons === 0 && styles.cardInativo]}>
+              <View style={[
+                styles.card,
+                item.cupons === 0 && styles.cardInativo,
+                item.tipoNota === 'servico' && item.cupons > 0 && styles.cardServico,
+              ]}>
+                {item.tipoNota === 'servico' && item.cupons > 0 && !item._ehSegundoCupom && (
+                  <View style={styles.tipoServicoTag}>
+                    <Text style={styles.tipoServicoTexto}>🔧 NOTA DE SERVIÇO — 2 CUPONS</Text>
+                  </View>
+                )}
+                {item.tipoNota === 'servico' && item._ehSegundoCupom && (
+                  <View style={[styles.tipoServicoTag, styles.tipoServicoTag2]}>
+                    <Text style={styles.tipoServicoTexto}>🎟️ 2º CUPOM DE SERVIÇO</Text>
+                  </View>
+                )}
                 <View style={styles.cardTopo}>
                   <Text style={styles.empresa} numberOfLines={1}>{item.razaoSocial}</Text>
                   {item.cupons > 0 && (
-                    <View style={styles.cupomBadge}>
-                      <Text style={styles.cupomNumero}>#{String(item.numeroCupom).padStart(6, '0')}</Text>
+                    <View style={[styles.cupomBadge, item.tipoNota === 'servico' && styles.cupomBadgeServico]}>
+                      <Text style={styles.cupomNumero}>#{String(item._cupomExibido).padStart(6, '0')}</Text>
                     </View>
                   )}
                 </View>
@@ -205,7 +234,23 @@ const styles = StyleSheet.create({
   cardTopo: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },
   empresa: { fontSize: 16, fontWeight: '600', flex: 1, marginRight: 8 },
   cupomBadge: { backgroundColor: '#2e7d32', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
+  cupomBadge2: { backgroundColor: '#1565c0' },
+  cupomBadgeServico: { backgroundColor: '#1565c0' },
   cupomNumero: { color: '#fff', fontWeight: 'bold', fontSize: 13 },
+  cuponsColuna: { alignItems: 'flex-end', gap: 4 },
+  tipoServico: { fontSize: 11, color: '#1565c0', fontWeight: '600', marginTop: 4 },
+  cardServico: {
+    borderLeftColor: '#1565c0',
+    backgroundColor: '#e3f2fd',
+  },
+  tipoServicoTag: {
+    backgroundColor: '#1565c0',
+    paddingHorizontal: 8, paddingVertical: 3,
+    borderRadius: 6, alignSelf: 'flex-start',
+    marginBottom: 8,
+  },
+  tipoServicoTag2: { backgroundColor: '#0d47a1' },
+  tipoServicoTexto: { color: '#fff', fontSize: 10, fontWeight: '700', letterSpacing: 0.5 },
   municipio: { fontSize: 13, color: '#666', marginBottom: 2 },
   data: { fontSize: 12, color: '#999' },
   semCupom: { fontSize: 12, color: '#e65100', marginTop: 6 },

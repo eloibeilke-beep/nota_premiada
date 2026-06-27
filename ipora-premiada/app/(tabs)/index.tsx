@@ -19,6 +19,7 @@ export default function HomeScreen() {
   const sair = async () => {
     await deleteItem('cpf');
     await deleteItem('nome');
+    await deleteItem('perfil');
     router.replace('/login');
   };
 

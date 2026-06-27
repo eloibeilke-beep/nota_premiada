@@ -66,7 +66,8 @@ function parseCsv(texto: string): Empresa[] {
       bairro: cols[7]?.trim() ?? '',
       cep: cols[8]?.trim() ?? '',
       municipio: cols[9]?.trim() ?? '',
-      ativa: cols[4]?.trim().toUpperCase() === 'ATIVA',
+      ativa: (cols[4]?.trim().toUpperCase() === 'ATIVA') &&
+        (() => { const m = cols[9]?.trim().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase() ?? ''; return m.includes('ipora do oeste') || m.includes('ipor do oeste'); })()
     };
   }).filter(e => e.cnpj.length >= 8 && e.razaosocial);
 }
@@ -130,7 +131,7 @@ export default function AdminScreen() {
                 body: JSON.stringify({ cpfAdmin, empresas, modo: modoImport }),
               });
               const json = await res.json();
-              if (!res.ok) { Alert.alert('Erro', json.detail); return; }
+              if (!res.ok) { Alert.alert('Erro', Array.isArray(json.detail) ? json.detail.map((d: any) => d.msg).join('\n') : String(json.detail ?? 'Erro desconhecido')); return; }
               setResultados(json.resultados);
               setEtapa('resultado');
             } catch {

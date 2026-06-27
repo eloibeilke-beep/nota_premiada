@@ -43,11 +43,16 @@
       "expo-secure-store"
     ],
     "extra": {
-      "API_BASE_URL": "http://192.168.3.51:8000"
+      "API_BASE_URL": "http://192.168.3.78:8000",
+      "router": {},
+      "eas": {
+        "projectId": "52f5c83e-c0e3-48c2-b243-178e2417183d"
+      }
     },
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "owner": "eloibeilkes-team"
   }
 }

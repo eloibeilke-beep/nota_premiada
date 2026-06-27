@@ -31,11 +31,22 @@ export default function DashboardScreen() {
     setCarregando(true);
     try {
       const cpf = await getItem('cpf');
-      const res = await fetch(apiUrl(`/admin/stats?cpfAdmin=${cpf}`));
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000);
+      
+      const res = await fetch(apiUrl(`/admin/stats?cpfAdmin=${cpf}`), { signal: controller.signal });
+      clearTimeout(timeoutId);
+      
+      if (!res.ok) throw new Error(`Erro ${res.status}`);
       const json = await res.json();
       setStats(json);
-    } catch (e) {
-      console.log(e);
+    } catch (e: any) {
+      console.error('Erro ao carregar stats:', e);
+      if (e?.name === 'AbortError') {
+        alert('Tempo esgotado. Verifique se o servidor está rodando e tente novamente.');
+      } else {
+        alert(`Erro ao carregar dashboard: ${e instanceof Error ? e.message : 'Tente novamente'}`);
+      }
     } finally {
       setCarregando(false);
     }
@@ -51,8 +62,15 @@ export default function DashboardScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.titulo}>Dashboard</Text>
-      <Text style={styles.subtitulo}>Visão geral do sistema</Text>
+      <View style={styles.topo}>
+        <View>
+          <Text style={styles.titulo}>Dashboard</Text>
+          <Text style={styles.subtitulo}>Visão geral do sistema</Text>
+        </View>
+        <TouchableOpacity style={styles.botaoAtualizar} onPress={buscar}>
+          <Text style={styles.botaoAtualizarTexto}>🔄 Atualizar</Text>
+        </TouchableOpacity>
+      </View>
 
       <Text style={styles.secao}>📅 {mes.charAt(0).toUpperCase() + mes.slice(1)}</Text>
       <View style={styles.grid}>
@@ -68,9 +86,7 @@ export default function DashboardScreen() {
         <Card icon="🎟️" label="Cupons" valor={stats?.totalCupons ?? 0} cor="#2e7d32" />
       </View>
 
-      <TouchableOpacity style={styles.botaoAtualizar} onPress={buscar}>
-        <Text style={styles.botaoAtualizarTexto}>🔄 Atualizar</Text>
-      </TouchableOpacity>
+
     </View>
   );
 }
@@ -78,7 +94,7 @@ export default function DashboardScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 20, paddingBottom: 40 },
   titulo: { fontSize: 24, fontWeight: 'bold', color: '#1b5e20', marginBottom: 4 },
-  subtitulo: { fontSize: 14, color: '#888', marginBottom: 24 },
+  subtitulo: { fontSize: 14, color: '#888' },
   secao: { fontSize: 14, fontWeight: '700', color: '#555', marginBottom: 12, marginTop: 8 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 16 },
   card: {
@@ -89,6 +105,7 @@ const styles = StyleSheet.create({
   cardIcone: { fontSize: 28, marginBottom: 8 },
   cardValor: { fontSize: 32, fontWeight: 'bold', marginBottom: 4 },
   cardLabel: { fontSize: 13, color: '#888' },
-  botaoAtualizar: { alignSelf: 'flex-start', backgroundColor: '#e8f5e9', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 8, marginTop: 8 },
+  topo: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 },
+  botaoAtualizar: { backgroundColor: '#e8f5e9', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 8 },
   botaoAtualizarTexto: { color: '#1b5e20', fontWeight: '600', fontSize: 14 },
 });

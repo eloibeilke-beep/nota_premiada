@@ -1,7 +1,7 @@
 import { useRouter } from 'expo-router';
 import { getItem, setItem } from '@/src/storage';
 import { apiUrl } from '@/src/api';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Alert, KeyboardAvoidingView, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 export default function LoginScreen() {
@@ -9,6 +9,7 @@ export default function LoginScreen() {
   const [cpf, setCpf] = useState('');
   const [senha, setSenha] = useState('');
   const [carregando, setCarregando] = useState(false);
+  const senhaRef = useRef<TextInput | null>(null);
 
   const formatarCpf = (v: string) => {
     const n = v.replace(/\D/g, '').slice(0, 11);
@@ -45,7 +46,12 @@ export default function LoginScreen() {
       await setItem('cpf', cpfLimpo);
       await setItem('nome', json.nome);
       await setItem('perfil', json.perfil ?? 'usuario');
-      router.replace('/(tabs)');
+
+      if (json.perfil === 'admin') {
+        router.replace('/(admin)/dashboard' as any);
+      } else {
+        router.replace('/(tabs)');
+      }
     } catch (e: any) {
       if (e?.name === 'AbortError') {
         Alert.alert('Tempo esgotado', 'O servidor demorou para responder. Verifique sua conexão.');
@@ -67,17 +73,23 @@ export default function LoginScreen() {
         placeholder="CPF"
         placeholderTextColor="#999"
         keyboardType="numeric"
+        returnKeyType="next"
+        blurOnSubmit={false}
         value={cpf}
         onChangeText={v => setCpf(formatarCpf(v))}
+        onSubmitEditing={() => senhaRef.current?.focus()}
       />
 
       <TextInput
+        ref={senhaRef}
         style={styles.input}
         placeholder="Senha"
         placeholderTextColor="#999"
         secureTextEntry
+        returnKeyType="done"
         value={senha}
         onChangeText={setSenha}
+        onSubmitEditing={entrar}
       />
 
       <TouchableOpacity style={styles.botao} onPress={entrar} disabled={carregando}>
